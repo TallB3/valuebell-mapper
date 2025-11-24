@@ -2,11 +2,11 @@
 
 ## Environment variables
 
-Create a `.env` file with the webhook endpoints:
+Copy `.env.example` to `.env` and fill in your webhook endpoints:
 
 ```
-VITE_TRANSCRIBE_WEBHOOK_URL=https://valuebell.app.n8n.cloud/webhook/031882ab-878a-4819-8e27-b54bfb355556
-VITE_TRANSCRIBE_STATUS_URL=https://valuebell.app.n8n.cloud/webhook/ceeb4010-7042-4efb-8e78-f72e0c41561d
+VITE_TRANSCRIBE_WEBHOOK_URL=https://your-n8n-domain/webhook/<submit-webhook-id>
+VITE_TRANSCRIBE_STATUS_URL=https://your-n8n-domain/webhook/<status-webhook-id>
 ```
 
 ## Getting started
