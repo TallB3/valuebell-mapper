@@ -30,3 +30,8 @@ dist-ssr
 
 # Claude Code local configuration
 .claude/
+
+# AI Agent instruction files (local use only)
+CLAUDE.md
+AGENTS.md
+GEMINI.md
