@@ -218,6 +218,7 @@ function TranscribeForm() {
   const isDone = statusRow?.status === 'done' && !statusRow.error
   const isErrored = Boolean(statusRow?.error) || statusRow?.status === 'timeout'
   const hasJob = Boolean(jobId)
+  const isErrorState = isErrored || Boolean(errorMessage)
 
   const statusLabel = (() => {
     switch (statusRow?.status) {
@@ -235,6 +236,10 @@ function TranscribeForm() {
         return 'Starting...'
     }
   })()
+
+  const requestHeading = isErrorState ? 'Request Stopped' : 'Processing Request'
+  const statusText = isErrorState ? '' : statusLabel
+  const showStatusLine = Boolean(statusText)
 
   const getCurrentStep = () => {
     switch (statusRow?.status) {
@@ -330,15 +335,17 @@ function TranscribeForm() {
       ) : (
         <div>
           <div className={styles.formHeader}>
-            <h2>Processing Request</h2>
-            <div className={styles.spiralSpinner} />
-            <p>
-              {statusLabel}
-              <span className={styles.ellipsis}></span>
-            </p>
+            <h2>{requestHeading}</h2>
+            {!isErrorState && <div className={styles.spiralSpinner} />}
+            {showStatusLine && (
+              <p>
+                {statusText}
+                {!isErrorState && <span className={styles.ellipsis}></span>}
+              </p>
+            )}
           </div>
 
-          {!errorMessage && !isErrored && (
+          {!isErrorState && (
             <>
                {currentGif && (
                 <div className={styles.gifContainer}>
