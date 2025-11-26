@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Formik, Form as FormikForm, Field } from 'formik'
 import type { FormikHelpers } from 'formik'
-import { Input, Button, message, Form } from 'antd'
-import { LinkOutlined, FileTextOutlined } from '@ant-design/icons'
+import { Input, Button, message, Form, Steps } from 'antd'
+import { LinkOutlined, FileTextOutlined, LoadingOutlined } from '@ant-design/icons'
 import * as Yup from 'yup'
 import axios from 'axios'
 import DownloadButtons from '../DownloadButtons/DownloadButtons'
@@ -12,6 +12,10 @@ const TRANSCRIBE_WEBHOOK = import.meta.env.VITE_TRANSCRIBE_WEBHOOK_URL
 const TRANSCRIBE_STATUS_WEBHOOK = import.meta.env.VITE_TRANSCRIBE_STATUS_URL
 const POLL_INTERVAL_MS = 10_000
 const JOB_TIMEOUT_MS = 45 * 60 * 1000
+
+// Import all GIFs from the assets folder
+const gifsGlob = import.meta.glob('../../assets/gifs/*.gif', { eager: true }) as Record<string, { default: string }>
+const GIF_URLS = Object.values(gifsGlob).map((mod) => mod.default)
 
 interface FormValues {
   driveVideoUrl: string
@@ -40,9 +44,15 @@ function TranscribeForm() {
   const [statusRow, setStatusRow] = useState<StatusRow | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isPolling, setIsPolling] = useState(false)
+  
+  // New state for enhanced wait screen
+  const [startTime, setStartTime] = useState<number | null>(null)
+  const [elapsedTime, setElapsedTime] = useState(0)
+  const [currentGif, setCurrentGif] = useState<string | null>(null)
 
   const pollIntervalRef = useRef<number | null>(null)
   const timeoutRef = useRef<number | null>(null)
+  const timerIntervalRef = useRef<number | null>(null)
 
   const clearTimers = () => {
     if (pollIntervalRef.current) {
@@ -53,11 +63,39 @@ function TranscribeForm() {
       window.clearTimeout(timeoutRef.current)
       timeoutRef.current = null
     }
+    if (timerIntervalRef.current) {
+      window.clearInterval(timerIntervalRef.current)
+      timerIntervalRef.current = null
+    }
   }
 
   useEffect(() => {
     return () => clearTimers()
   }, [])
+
+  // Timer effect
+  useEffect(() => {
+    if (startTime && isPolling) {
+      timerIntervalRef.current = window.setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000))
+      }, 1000)
+    } else {
+      if (timerIntervalRef.current) {
+        window.clearInterval(timerIntervalRef.current)
+      }
+    }
+    return () => {
+      if (timerIntervalRef.current) {
+        window.clearInterval(timerIntervalRef.current)
+      }
+    }
+  }, [startTime, isPolling])
+
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}:${s.toString().padStart(2, '0')}`
+  }
 
   const stopPolling = useCallback(() => {
     clearTimers()
@@ -114,6 +152,14 @@ function TranscribeForm() {
       setIsPolling(true)
       setStatusRow({ id, status: 'queued' })
       setErrorMessage(null)
+      
+      // Start timer and pick random GIF
+      setStartTime(Date.now())
+      setElapsedTime(0)
+      if (GIF_URLS.length > 0) {
+        const randomGif = GIF_URLS[Math.floor(Math.random() * GIF_URLS.length)]
+        setCurrentGif(randomGif)
+      }
 
       fetchStatus(id, { initial: true })
 
@@ -164,6 +210,9 @@ function TranscribeForm() {
     setStatusRow(null)
     setErrorMessage(null)
     setIsPolling(false)
+    setStartTime(null)
+    setElapsedTime(0)
+    setCurrentGif(null)
   }
 
   const isDone = statusRow?.status === 'done' && !statusRow.error
@@ -186,6 +235,16 @@ function TranscribeForm() {
         return 'Starting...'
     }
   })()
+
+  const getCurrentStep = () => {
+    switch (statusRow?.status) {
+      case 'queued': return 0
+      case 'transcribing': return 1
+      case 'mapping': return 2
+      case 'done': return 3
+      default: return 0
+    }
+  }
 
   return (
     <div className={styles.container}>
@@ -272,13 +331,43 @@ function TranscribeForm() {
         <div>
           <div className={styles.formHeader}>
             <h2>Processing Request</h2>
-            <p>{statusLabel}</p>
+            <div className={styles.spiralSpinner} />
+            <p>
+              {statusLabel}
+              <span className={styles.ellipsis}></span>
+            </p>
           </div>
 
+          {!errorMessage && !isErrored && (
+            <>
+               {currentGif && (
+                <div className={styles.gifContainer}>
+                  <img src={currentGif} alt="Processing..." />
+                </div>
+              )}
+
+              <div className={styles.timer}>
+                Time Elapsed: <span>{formatTime(elapsedTime)}</span>
+              </div>
+
+              <div className={styles.stepsContainer}>
+                 <Steps
+                  current={getCurrentStep()}
+                  size="small"
+                  items={[
+                    { title: 'Queued', icon: getCurrentStep() === 0 && <LoadingOutlined /> },
+                    { title: 'Transcribing', icon: getCurrentStep() === 1 && <LoadingOutlined /> },
+                    { title: 'Mapping', icon: getCurrentStep() === 2 && <LoadingOutlined /> },
+                  ]}
+                />
+              </div>
+            </>
+          )}
+
           {errorMessage ? (
-            <div style={{ color: '#ff7875', marginBottom: '16px' }}>{errorMessage}</div>
+            <div style={{ color: '#ff7875', marginBottom: '16px', textAlign: 'center' }}>{errorMessage}</div>
           ) : (
-            <div style={{ color: 'rgba(255,255,255,0.75)', marginBottom: '16px' }}>
+             <div style={{ color: 'rgba(255,255,255,0.75)', marginBottom: '24px', textAlign: 'center', fontSize: '14px' }}>
               Keep this page open while we process your file. We will refresh the status and links automatically.
             </div>
           )}

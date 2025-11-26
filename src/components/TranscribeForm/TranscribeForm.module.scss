@@ -52,3 +52,87 @@
 :global(.ant-input) {
   background-color: transparent !important;
 }
+
+.gifContainer {
+  margin: 24px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  
+  img {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.timer {
+  text-align: center;
+  font-size: 1rem;
+  color: var(--brand-text-muted);
+  margin-bottom: 24px;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+
+  span {
+    color: var(--brand-orange);
+    font-weight: 600;
+    margin-left: 8px;
+  }
+}
+
+.stepsContainer {
+  margin-bottom: 32px;
+  padding: 0 16px;
+
+  /* Override Ant Design Steps styles for dark theme contrast */
+  :global {
+    .ant-steps-item-process .ant-steps-item-icon {
+      background-color: var(--brand-orange);
+      border-color: var(--brand-orange);
+    }
+    
+    .ant-steps-item-finish .ant-steps-item-icon {
+      border-color: var(--brand-orange);
+      svg {
+        fill: var(--brand-orange);
+      }
+    }
+    
+    .ant-steps-item-finish > .ant-steps-item-container > .ant-steps-item-content > .ant-steps-item-title::after {
+      background-color: var(--brand-orange);
+    }
+  }
+}
+
+.ellipsis::after {
+  content: '.';
+  animation: dots 1.5s steps(4, end) infinite;
+  display: inline-block;
+  width: 1em;
+  text-align: left;
+}
+
+@keyframes dots {
+  0%, 20% { content: '.'; }
+  40% { content: '..'; }
+  60% { content: '...'; }
+  80%, 100% { content: ''; }
+}
+
+.spiralSpinner {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--brand-orange);
+  border-right-color: rgba(249, 107, 47, 0.5);
+  border-bottom-color: rgba(249, 107, 47, 0.2);
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px; 
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
