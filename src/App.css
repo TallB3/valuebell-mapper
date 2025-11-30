@@ -42,13 +42,33 @@
   justify-content: center;
 }
 
+.floating-contact-button {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(249, 107, 47, 0.4);
+  transition: all 0.3s ease;
+}
+
+.floating-contact-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(249, 107, 47, 0.6);
+}
+
 @media (max-width: 600px) {
   .app-header {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .app-title {
     font-size: 2rem;
+  }
+
+  .floating-contact-button {
+    bottom: 1rem;
+    right: 1rem;
   }
 }
