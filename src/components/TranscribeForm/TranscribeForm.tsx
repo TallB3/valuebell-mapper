@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Formik, Form as FormikForm, Field } from 'formik'
 import type { FormikHelpers } from 'formik'
-import { Input, Button, message, Form, Steps } from 'antd'
-import { LinkOutlined, FileTextOutlined, LoadingOutlined } from '@ant-design/icons'
+import { Input, Button, message, Form } from 'antd'
+import { LinkOutlined, FileTextOutlined, MailOutlined } from '@ant-design/icons'
 import * as Yup from 'yup'
 import axios from 'axios'
 import DownloadButtons from '../DownloadButtons/DownloadButtons'
+import ProcessingView from './ProcessingView'
 import styles from './TranscribeForm.module.scss'
-
-const TRANSCRIBE_WEBHOOK = import.meta.env.VITE_TRANSCRIBE_WEBHOOK_URL
-const TRANSCRIBE_STATUS_WEBHOOK = import.meta.env.VITE_TRANSCRIBE_STATUS_URL
+import { TRANSCRIBE_WEBHOOK, TRANSCRIBE_STATUS_WEBHOOK } from '../../constants'
 const POLL_INTERVAL_MS = 10_000
 const JOB_TIMEOUT_MS = 45 * 60 * 1000
 
@@ -20,6 +19,7 @@ const GIF_URLS = Object.values(gifsGlob).map((mod) => mod.default)
 interface FormValues {
   driveVideoUrl: string
   episodeName: string
+  email: string
 }
 
 const validationSchema = Yup.object({
@@ -28,6 +28,13 @@ const validationSchema = Yup.object({
     .required('Drive video URL is required'),
   episodeName: Yup.string()
     .required('Episode name is required')
+    .matches(
+      /^[a-zA-Z0-9\s\-_]+$/,
+      'Episode name can only contain letters, numbers, spaces, hyphens, and underscores'
+    ),
+  email: Yup.string()
+    .email('Please enter a valid email')
+    .required('Email is required')
 })
 
 interface StatusRow {
@@ -90,12 +97,6 @@ function TranscribeForm() {
       }
     }
   }, [startTime, isPolling])
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m}:${s.toString().padStart(2, '0')}`
-  }
 
   const stopPolling = useCallback(() => {
     clearTimers()
@@ -219,33 +220,6 @@ function TranscribeForm() {
   const isErrored = Boolean(statusRow?.error) || statusRow?.status === 'timeout'
   const hasJob = Boolean(jobId)
 
-  const statusLabel = (() => {
-    switch (statusRow?.status) {
-      case 'queued':
-        return 'Queued — waiting to start'
-      case 'transcribing':
-        return 'Transcribing audio...'
-      case 'mapping':
-        return 'Generating mapping...'
-      case 'done':
-        return 'Completed'
-      case 'timeout':
-        return 'Timed out'
-      default:
-        return 'Starting...'
-    }
-  })()
-
-  const getCurrentStep = () => {
-    switch (statusRow?.status) {
-      case 'queued': return 0
-      case 'transcribing': return 1
-      case 'mapping': return 2
-      case 'done': return 3
-      default: return 0
-    }
-  }
-
   return (
     <div className={styles.container}>
       {!hasJob ? (
@@ -255,7 +229,7 @@ function TranscribeForm() {
             <p>Enter the details below to begin the mapping process.</p>
           </div>
           <Formik
-            initialValues={{ driveVideoUrl: '', episodeName: '' }}
+            initialValues={{ driveVideoUrl: '', episodeName: '', email: '' }}
             validationSchema={validationSchema}
             onSubmit={handleSubmit}
           >
@@ -272,7 +246,7 @@ function TranscribeForm() {
                     {() => (
                       <Input
                         size="large"
-                        prefix={<LinkOutlined style={{ color: 'rgba(255,255,255,0.25)' }} />}
+                        prefix={<LinkOutlined className={styles.inputIcon} />}
                         placeholder="https://drive.google.com/..."
                         value={values.driveVideoUrl}
                         onChange={(e) => setFieldValue('driveVideoUrl', e.target.value)}
@@ -294,7 +268,7 @@ function TranscribeForm() {
                     {() => (
                       <Input
                         size="large"
-                        prefix={<FileTextOutlined style={{ color: 'rgba(255,255,255,0.25)' }} />}
+                        prefix={<FileTextOutlined className={styles.inputIcon} />}
                         placeholder="e.g. Episode 42 - The Beginning"
                         value={values.episodeName}
                         onChange={(e) => setFieldValue('episodeName', e.target.value)}
@@ -305,14 +279,36 @@ function TranscribeForm() {
                   </Field>
                 </Form.Item>
 
-                <Form.Item style={{ marginTop: '32px' }}>
-                  <Button 
-                    type="primary" 
-                    htmlType="submit" 
-                    block 
-                    size="large" 
+                <Form.Item
+                  label={<span className={styles.label}>Email</span>}
+                  validateStatus={touched.email && errors.email ? 'error' : ''}
+                  help={touched.email && errors.email}
+                  colon={false}
+                  layout="vertical"
+                >
+                  <Field name="email">
+                    {() => (
+                      <Input
+                        size="large"
+                        prefix={<MailOutlined className={styles.inputIcon} />}
+                        placeholder="your.email@example.com"
+                        value={values.email}
+                        onChange={(e) => setFieldValue('email', e.target.value)}
+                        onBlur={handleBlur('email')}
+                        disabled={loading}
+                      />
+                    )}
+                  </Field>
+                </Form.Item>
+
+                <Form.Item className={styles.submitFormItem}>
+                  <Button
+                    type="primary"
+                    htmlType="submit"
+                    block
+                    size="large"
                     loading={loading}
-                    style={{ height: '48px', fontWeight: 600 }}
+                    className={styles.submitButton}
                   >
                     {loading ? 'Processing...' : 'Submit Request'}
                   </Button>
@@ -328,83 +324,17 @@ function TranscribeForm() {
           onReset={handleReset}
         />
       ) : (
-        <div>
-          <div className={styles.formHeader}>
-            <h2>Processing Request</h2>
-            <div className={styles.spiralSpinner} />
-            <p>
-              {statusLabel}
-              <span className={styles.ellipsis}></span>
-            </p>
-          </div>
-
-          {!errorMessage && !isErrored && (
-            <>
-               {currentGif && (
-                <div className={styles.gifContainer}>
-                  <img src={currentGif} alt="Processing..." />
-                </div>
-              )}
-
-              <div className={styles.timer}>
-                Time Elapsed: <span>{formatTime(elapsedTime)}</span>
-              </div>
-
-              <div className={styles.stepsContainer}>
-                 <Steps
-                  current={getCurrentStep()}
-                  size="small"
-                  items={[
-                    { title: 'Queued', icon: getCurrentStep() === 0 && <LoadingOutlined /> },
-                    { title: 'Transcribing', icon: getCurrentStep() === 1 && <LoadingOutlined /> },
-                    { title: 'Mapping', icon: getCurrentStep() === 2 && <LoadingOutlined /> },
-                  ]}
-                />
-              </div>
-            </>
-          )}
-
-          {errorMessage ? (
-            <div style={{ color: '#ff7875', marginBottom: '16px', textAlign: 'center' }}>{errorMessage}</div>
-          ) : (
-             <div style={{ color: 'rgba(255,255,255,0.75)', marginBottom: '24px', textAlign: 'center', fontSize: '14px' }}>
-              Keep this page open while we process your file. We will refresh the status and links automatically.
-            </div>
-          )}
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {statusRow?.resultTranscriptUrl && (
-              <Button
-                type="default"
-                size="large"
-                block
-                onClick={() => window.open(statusRow.resultTranscriptUrl as string, '_blank')}
-              >
-                Open Transcript (ready)
-              </Button>
-            )}
-
-            {statusRow?.resultMappingUrl && (
-              <Button
-                type="default"
-                size="large"
-                block
-                onClick={() => window.open(statusRow.resultMappingUrl as string, '_blank')}
-              >
-                Open Mapping (ready)
-              </Button>
-            )}
-
-            {isErrored && (
-              <Button block size="large" onClick={handleReset}>
-                Submit Another
-              </Button>
-            )}
-          </div>
-        </div>
+        <ProcessingView
+          statusRow={statusRow}
+          errorMessage={errorMessage}
+          isErrored={isErrored}
+          currentGif={currentGif}
+          elapsedTime={elapsedTime}
+          onReset={handleReset}
+        />
       )}
     </div>
   )
 }
-
+// sr
 export default TranscribeForm

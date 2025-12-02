@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Transcription is Ready - Valuebell Studio</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #121212;
+            color: #FFFFFF;
+            line-height: 1.5;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #1E1E1E;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 40px 24px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 24px;
+            border-radius: 8px;
+        }
+
+        .header h1 {
+            font-size: 1.75rem;
+            margin-bottom: 8px;
+            color: #FFFFFF;
+        }
+
+        .header p {
+            color: #A1A1A1;
+            font-size: 0.95rem;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, rgba(249, 107, 47, 0.1) 0%, rgba(249, 107, 47, 0.05) 100%);
+            border-left: 4px solid #F96B2F;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 32px;
+        }
+
+        .success-message h2 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+            color: #F96B2F;
+        }
+
+        .success-message p {
+            color: #A1A1A1;
+            font-size: 0.95rem;
+        }
+
+        .episode-name {
+            font-weight: 600;
+            color: #FFFFFF;
+        }
+
+        .download-section {
+            margin-bottom: 32px;
+        }
+
+        .download-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 16px;
+            color: #FFFFFF;
+        }
+
+        .download-button {
+            display: block;
+            background-color: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            text-decoration: none;
+            color: #FFFFFF;
+            transition: all 0.25s;
+            width: 100%;
+        }
+
+        .download-button table {
+            width: 100%;
+        }
+
+        .download-button:hover {
+            background-color: #333;
+            border-color: #F96B2F;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(249, 107, 47, 0.2);
+        }
+
+
+        .button-icon {
+            width: 40px;
+            height: 40px;
+            background-color: #F96B2F;
+            border-radius: 8px;
+            display: block;
+            text-align: center;
+            line-height: 40px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #FFFFFF;
+        }
+
+        .button-text {
+        }
+
+        .button-text h4 {
+            font-size: 1rem;
+            margin-bottom: 2px;
+            color: #FFFFFF;
+        }
+
+        .button-text p {
+            font-size: 0.85rem;
+            color: #A1A1A1;
+        }
+
+        .button-arrow {
+            color: #F96B2F;
+            font-size: 1.5rem;
+        }
+
+        .instructions {
+            background-color: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 32px;
+        }
+
+        .instructions h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: #FFFFFF;
+        }
+
+        .instructions ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .instructions li {
+            padding: 8px 0;
+            padding-left: 24px;
+            position: relative;
+            color: #A1A1A1;
+            font-size: 0.9rem;
+        }
+
+        .instructions li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #F96B2F;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 24px 40px 40px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer p {
+            color: #A1A1A1;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .footer a {
+            color: #F96B2F;
+            text-decoration: none;
+            transition: color 0.25s;
+        }
+
+        .footer a:hover {
+            color: #ff8c5a;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 10px;
+            }
+
+            .header,
+            .content,
+            .footer {
+                padding: 24px 20px;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .logo {
+                width: 100px;
+                height: 100px;
+            }
+
+            .download-button {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 12px;
+            }
+
+            .button-content {
+                width: 100%;
+            }
+
+            .button-arrow {
+                align-self: flex-end;
+                margin-left: 0;
+                margin-top: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Your Transcription is Ready!</h1>
+            <p>Valuebell Studio</p>
+        </div>
+
+        <div class="content">
+            <div class="success-message">
+                <h2>✓ Processing Complete</h2>
+                <p>We've successfully processed <span class="episode-name">{{ $json.episodeName }}</span> and your files are ready for download.</p>
+            </div>
+
+            <div class="download-section">
+                <h3>Download Your Files</h3>
+
+                <a href="{{ $json.resultTranscriptUrl }}" class="download-button" style="display: block; text-decoration: none;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                            <td style="width: 40px; vertical-align: middle;">
+                                <div class="button-icon">T</div>
+                            </td>
+                            <td style="width: 12px;"></td>
+                            <td class="button-text" style="vertical-align: middle;">
+                                <h4>Transcription</h4>
+                                <p>Human-readable transcript file</p>
+                            </td>
+                            <td style="width: 30px; text-align: right; vertical-align: middle;">
+                                <span class="button-arrow">→</span>
+                            </td>
+                        </tr>
+                    </table>
+                </a>
+
+                <a href="{{ $json.resultMappingUrl }}" class="download-button" style="display: block; text-decoration: none;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                            <td style="width: 40px; vertical-align: middle;">
+                                <div class="button-icon">M</div>
+                            </td>
+                            <td style="width: 12px;"></td>
+                            <td class="button-text" style="vertical-align: middle;">
+                                <h4>Mapping File</h4>
+                                <p>Structured mapping data</p>
+                            </td>
+                            <td style="width: 30px; text-align: right; vertical-align: middle;">
+                                <span class="button-arrow">→</span>
+                            </td>
+                        </tr>
+                    </table>
+                </a>
+            </div>
+
+            <div class="instructions">
+                <h3>How to Use Your Files</h3>
+                <ul>
+                    <li><strong>Transcription File:</strong> Contains the full text transcript of your episode, formatted for easy reading and reference</li>
+                    <li><strong>Mapping File:</strong> Includes timestamped data and structured information for analysis and integration</li>
+                    <li>Both files are stored securely on Google Drive and accessible via the links above</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Need help? <a href="https://www.valuebell.studio/contact">Contact our support team</a></p>
+            <p>&copy; {{$now.year}} Valuebell Studio. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
