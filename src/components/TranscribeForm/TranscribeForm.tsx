@@ -7,6 +7,8 @@ import * as Yup from 'yup'
 import axios from 'axios'
 import DownloadButtons from '../DownloadButtons/DownloadButtons'
 import ProcessingView from './ProcessingView'
+import TranscriptViewer from '../TranscriptViewer/TranscriptViewer'
+import MapViewer from '../MapViewer/MapViewer'
 import styles from './TranscribeForm.module.scss'
 import { TRANSCRIBE_WEBHOOK, TRANSCRIBE_STATUS_WEBHOOK } from '../../constants'
 const POLL_INTERVAL_MS = 10_000
@@ -42,6 +44,7 @@ interface StatusRow {
   status?: string | null
   resultTranscriptUrl?: string | null
   resultMappingUrl?: string | null
+  llmResponse?: string | null
   error?: boolean
 }
 
@@ -219,119 +222,132 @@ function TranscribeForm() {
   const isDone = statusRow?.status === 'done' && !statusRow.error
   const isErrored = Boolean(statusRow?.error) || statusRow?.status === 'timeout'
   const hasJob = Boolean(jobId)
+  const transcriptUrl = statusRow?.resultTranscriptUrl || ''
+  const mappingMarkdown = (statusRow?.llmResponse || '').trim()
+  const showTranscriptViewer = Boolean(transcriptUrl)
+  const showMappingViewer = Boolean(mappingMarkdown)
 
   return (
-    <div className={styles.container}>
-      {!hasJob ? (
-        <>
-          <div className={styles.formHeader}>
-            <h2>Start New Transcription</h2>
-            <p>Enter the details below to begin the mapping process.</p>
-          </div>
-          <Formik
-            initialValues={{ driveVideoUrl: '', episodeName: '', email: '' }}
-            validationSchema={validationSchema}
-            onSubmit={handleSubmit}
-          >
-            {({ setFieldValue, values, errors, touched, handleBlur }) => (
-              <FormikForm>
-                <Form.Item
-                  label={<span className={styles.label}>Drive Video URL</span>}
-                  validateStatus={touched.driveVideoUrl && errors.driveVideoUrl ? 'error' : ''}
-                  help={touched.driveVideoUrl && errors.driveVideoUrl}
-                  colon={false}
-                  layout="vertical"
-                >
-                  <Field name="driveVideoUrl">
-                    {() => (
-                      <Input
-                        size="large"
-                        prefix={<LinkOutlined className={styles.inputIcon} />}
-                        placeholder="https://drive.google.com/..."
-                        value={values.driveVideoUrl}
-                        onChange={(e) => setFieldValue('driveVideoUrl', e.target.value)}
-                        onBlur={handleBlur('driveVideoUrl')}
-                        disabled={loading}
-                      />
-                    )}
-                  </Field>
-                </Form.Item>
-
-                <Form.Item
-                  label={<span className={styles.label}>Episode Name</span>}
-                  validateStatus={touched.episodeName && errors.episodeName ? 'error' : ''}
-                  help={touched.episodeName && errors.episodeName}
-                  colon={false}
-                  layout="vertical"
-                >
-                  <Field name="episodeName">
-                    {() => (
-                      <Input
-                        size="large"
-                        prefix={<FileTextOutlined className={styles.inputIcon} />}
-                        placeholder="e.g. Episode 42 - The Beginning"
-                        value={values.episodeName}
-                        onChange={(e) => setFieldValue('episodeName', e.target.value)}
-                        onBlur={handleBlur('episodeName')}
-                        disabled={loading}
-                      />
-                    )}
-                  </Field>
-                </Form.Item>
-
-                <Form.Item
-                  label={<span className={styles.label}>Email</span>}
-                  validateStatus={touched.email && errors.email ? 'error' : ''}
-                  help={touched.email && errors.email}
-                  colon={false}
-                  layout="vertical"
-                >
-                  <Field name="email">
-                    {() => (
-                      <Input
-                        size="large"
-                        prefix={<MailOutlined className={styles.inputIcon} />}
-                        placeholder="your.email@example.com"
-                        value={values.email}
-                        onChange={(e) => setFieldValue('email', e.target.value)}
-                        onBlur={handleBlur('email')}
-                        disabled={loading}
-                      />
-                    )}
-                  </Field>
-                </Form.Item>
-
-                <Form.Item className={styles.submitFormItem}>
-                  <Button
-                    type="primary"
-                    htmlType="submit"
-                    block
-                    size="large"
-                    loading={loading}
-                    className={styles.submitButton}
+    <div className={styles.wrapper}>
+      <div className={styles.container}>
+        {!hasJob ? (
+          <>
+            <div className={styles.formHeader}>
+              <h2>Start New Transcription</h2>
+              <p>Enter the details below to begin the mapping process.</p>
+            </div>
+            <Formik
+              initialValues={{ driveVideoUrl: '', episodeName: '', email: '' }}
+              validationSchema={validationSchema}
+              onSubmit={handleSubmit}
+            >
+              {({ setFieldValue, values, errors, touched, handleBlur }) => (
+                <FormikForm>
+                  <Form.Item
+                    label={<span className={styles.label}>Drive Video URL</span>}
+                    validateStatus={touched.driveVideoUrl && errors.driveVideoUrl ? 'error' : ''}
+                    help={touched.driveVideoUrl && errors.driveVideoUrl}
+                    colon={false}
+                    layout="vertical"
                   >
-                    {loading ? 'Processing...' : 'Submit Request'}
-                  </Button>
-                </Form.Item>
-              </FormikForm>
-            )}
-          </Formik>
-        </>
-      ) : isDone ? (
-        <DownloadButtons
-          humanReadableTranscriptDriveFileUrl={statusRow?.resultTranscriptUrl || ''}
-          mappingDriveFileUrl={statusRow?.resultMappingUrl || ''}
-          onReset={handleReset}
-        />
-      ) : (
-        <ProcessingView
-          statusRow={statusRow}
-          errorMessage={errorMessage}
-          isErrored={isErrored}
-          currentGif={currentGif}
-          elapsedTime={elapsedTime}
-          onReset={handleReset}
-        />
+                    <Field name="driveVideoUrl">
+                      {() => (
+                        <Input
+                          size="large"
+                          prefix={<LinkOutlined className={styles.inputIcon} />}
+                          placeholder="https://drive.google.com/..."
+                          value={values.driveVideoUrl}
+                          onChange={(e) => setFieldValue('driveVideoUrl', e.target.value)}
+                          onBlur={handleBlur('driveVideoUrl')}
+                          disabled={loading}
+                        />
+                      )}
+                    </Field>
+                  </Form.Item>
+
+                  <Form.Item
+                    label={<span className={styles.label}>Episode Name</span>}
+                    validateStatus={touched.episodeName && errors.episodeName ? 'error' : ''}
+                    help={touched.episodeName && errors.episodeName}
+                    colon={false}
+                    layout="vertical"
+                  >
+                    <Field name="episodeName">
+                      {() => (
+                        <Input
+                          size="large"
+                          prefix={<FileTextOutlined className={styles.inputIcon} />}
+                          placeholder="e.g. Episode 42 - The Beginning"
+                          value={values.episodeName}
+                          onChange={(e) => setFieldValue('episodeName', e.target.value)}
+                          onBlur={handleBlur('episodeName')}
+                          disabled={loading}
+                        />
+                      )}
+                    </Field>
+                  </Form.Item>
+
+                  <Form.Item
+                    label={<span className={styles.label}>Email</span>}
+                    validateStatus={touched.email && errors.email ? 'error' : ''}
+                    help={touched.email && errors.email}
+                    colon={false}
+                    layout="vertical"
+                  >
+                    <Field name="email">
+                      {() => (
+                        <Input
+                          size="large"
+                          prefix={<MailOutlined className={styles.inputIcon} />}
+                          placeholder="your.email@example.com"
+                          value={values.email}
+                          onChange={(e) => setFieldValue('email', e.target.value)}
+                          onBlur={handleBlur('email')}
+                          disabled={loading}
+                        />
+                      )}
+                    </Field>
+                  </Form.Item>
+
+                  <Form.Item className={styles.submitFormItem}>
+                    <Button
+                      type="primary"
+                      htmlType="submit"
+                      block
+                      size="large"
+                      loading={loading}
+                      className={styles.submitButton}
+                    >
+                      {loading ? 'Processing...' : 'Submit Request'}
+                    </Button>
+                  </Form.Item>
+                </FormikForm>
+              )}
+            </Formik>
+          </>
+        ) : isDone ? (
+          <DownloadButtons
+            humanReadableTranscriptDriveFileUrl={statusRow?.resultTranscriptUrl || ''}
+            mappingDriveFileUrl={statusRow?.resultMappingUrl || ''}
+            onReset={handleReset}
+          />
+        ) : (
+          <ProcessingView
+            statusRow={statusRow}
+            errorMessage={errorMessage}
+            isErrored={isErrored}
+            currentGif={currentGif}
+            elapsedTime={elapsedTime}
+            onReset={handleReset}
+          />
+        )}
+      </div>
+
+      {(showTranscriptViewer || showMappingViewer) && (
+        <div className={styles.viewerContainer}>
+          {showTranscriptViewer && <TranscriptViewer transcriptUrl={transcriptUrl} />}
+          {showMappingViewer && <MapViewer content={mappingMarkdown} />}
+        </div>
       )}
     </div>
   )
