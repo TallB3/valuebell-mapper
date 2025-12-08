@@ -1,8 +1,3 @@
-
-
-
-
-
 # Valuebell Mapper --> Valuebot
 
 # Start New Transcription

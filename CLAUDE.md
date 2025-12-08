@@ -1,17 +1,17 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude when working with code in this repository.
 
 ## Project Overview
 
 Valuebell Mapper is a React + TypeScript + Vite frontend application for submitting podcast transcription and content mapping jobs. The system consists of:
 - **Frontend**: React app (this repo) deployed on Netlify at https://valuebell-mapper.netlify.app/
-- **Backend**: n8n workflows (JSON files in this repo represent the workflow definitions)
+- **Backend**: n8n workflows (definitions live outside this repo; keep URLs/configs in sync when updating flows)
 
 ### How It Works
 
-1. User submits Google Drive video URL + episode name via the frontend form
-2. Frontend POSTs to n8n webhook (triggers "Mapper - Orr.json" workflow)
+1. User submits Google Drive video URL + episode name + email via the frontend form
+2. Frontend POSTs to n8n webhook (triggers "Mapper - Orr.json" workflow) with `{ driveVideoUrl, episodeName, email }`
 3. n8n workflow orchestrates:
    - Calling transcription service (Google Cloud Run)
    - Processing transcript with Gemini API for content mapping
@@ -29,6 +29,7 @@ VITE_TRANSCRIBE_STATUS_URL=https://your-n8n-domain/webhook/<status-webhook-id>
 ```
 
 Copy `.env.example` to `.env` and fill in your actual n8n webhook endpoints.
+`src/constants.ts` provides production defaults (`valuebell.app.n8n.cloud` submit/status webhooks) if the env vars are missing—override them locally with `.env`.
 
 ## Development Commands
 
@@ -55,41 +56,42 @@ npm preview
 
 The app follows an async job pattern with client-side polling:
 
-**1. Job Submission** (`TranscribeForm.tsx:130-159`):
-- POST to `VITE_TRANSCRIBE_WEBHOOK_URL` with `{ driveVideoUrl, episodeName }`
+**1. Job Submission** (`TranscribeForm.tsx`):
+- POST to `VITE_TRANSCRIBE_WEBHOOK_URL` with `{ driveVideoUrl, episodeName, email }`
 - Backend returns `jobId` (or `jobID` - both are handled)
 - Immediately starts polling with the returned job ID
 
-**2. Status Polling** (`TranscribeForm.tsx:67-110`, `TranscribeForm.tsx:112-128`):
+**2. Status Polling** (`TranscribeForm.tsx`):
 - GET to `VITE_TRANSCRIBE_STATUS_URL?jobId=<id>` every 10 seconds
 - Polls for up to 45 minutes (timeout at `JOB_TIMEOUT_MS`)
-- Uses `useRef` to manage `setInterval` and timeout timers
+- Uses `useRef` to manage polling, timeout, and elapsed-time timers
 - Stops polling when status is `'done'`, error occurs, or timeout reached
 
-**3. Status Response Schema** (`TranscribeForm.tsx:29-35`):
+**3. Status Response Schema**:
 ```typescript
 interface StatusRow {
   id?: number | string
-  status?: 'queued' | 'transcribing' | 'mapping' | 'done' | 'timeout' | null
-  resultTranscriptUrl?: string | null  // Google Drive download link
-  resultMappingUrl?: string | null     // Google Drive download link
+  status?: string | null               // expected: queued | transcribing | mapping | done | timeout
+  resultTranscriptUrl?: string | null  // Google Doc link (frontend derives .docx export for inline preview)
+  resultMappingUrl?: string | null     // Google Doc link
+  llmResponse?: string | null          // raw Gemini mapping markdown (rendered inline)
   error?: boolean
 }
 ```
 
-**4. UI States** (`TranscribeForm.tsx:192-316`):
+**4. UI States**:
 - **Form state**: Show input form when no active job
-- **Processing state**: Show status label + partial download links while polling
-- **Done state**: Show `DownloadButtons` component with both download links
+- **Processing state**: `ProcessingView` shows spinner, optional celebratory GIF, elapsed timer, step tracker, and ready links if URLs arrive early
+- **Done state**: Show `DocumentButtons` component with both links to open the Google Docs and a reset action
 
 ### Backend Architecture (n8n Workflows)
 
 **Main Workflow: "Mapper - Orr.json"**
 
-This workflow handles the entire transcription and mapping pipeline:
+ This workflow handles the entire transcription and mapping pipeline:
 
 1. **Webhook Trigger** (node: "Webhook")
-   - Receives POST with `{ driveVideoUrl, episodeName }`
+   - Receives POST with `{ driveVideoUrl, episodeName, email }`
 
 2. **Database Insert** (node: "Insert row")
    - Creates job record in n8n Data Table `valuebell-mapper-runs`
@@ -138,7 +140,9 @@ Simple 3-node workflow:
 ```
 App.tsx
 └── TranscribeForm.tsx (main form + job orchestration)
-    └── DownloadButtons.tsx (success state with download links)
+    ├── DownloadButtons.tsx (success state with download links)
+    ├── TranscriptViewer.tsx (inline .docx preview with copy + RTL detection)
+    └── MapViewer.tsx (inline mapping markdown preview from llmResponse)
 ```
 
 - **App.tsx**: Ant Design dark theme configuration with Valuebell branding (`#F96B2F` primary color)
@@ -149,13 +153,21 @@ App.tsx
 
 Uses Formik + Yup schema validation:
 - `driveVideoUrl`: Required, must be valid URL format
-- `episodeName`: Required string
+- `driveVideoUrl`: Blocks Google Drive folder links (must be a file link, not a folder)
+- `episodeName`: Required string, allows letters from any language (Unicode), numbers, spaces, hyphens, and underscores
+- `email`: Required, must be valid email
 
 ### Styling
 
 - SCSS modules for component-level styles (`.module.scss` files)
 - Ant Design components with custom theme overrides in `App.tsx`
 - Dark mode by default via `theme.darkAlgorithm`
+
+### Notifications / Templates
+
+- `src/templates/finishedFlowEmail.html` is the n8n email template used to send completion emails with transcript/mapping links.
+- Email and UI copy use “Open” Google Docs links (not direct downloads); if you need a docx file, download from Google Docs.
+- Fun wait-state GIFs live in `src/assets/gifs/` and are randomly surfaced during processing; keep/add GIFs there to refresh the experience.
 
 ## n8n Data Table Schema
 
@@ -183,6 +195,8 @@ Columns:
 - **Formik 2.4**: Form state management
 - **Yup 1.7**: Schema validation
 - **Axios 1.13**: HTTP client for webhook calls
+- **Mammoth 1.11**: Client-side .docx text extraction for transcript preview
+- **react-markdown 10.1 + remark-gfm 4.0**: Render Gemini mapping markdown inline
 - **Vite 7.2**: Build tool and dev server
 - **TypeScript 5.9**: Type safety
 

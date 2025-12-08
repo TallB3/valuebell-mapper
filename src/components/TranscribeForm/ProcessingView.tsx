@@ -38,15 +38,15 @@ function ProcessingView({
       case 'queued':
         return 'Queued — waiting to start'
       case 'transcribing':
-        return 'Transcribing audio...'
+        return 'Transcribing audio'
       case 'mapping':
-        return 'Generating mapping...'
+        return 'Generating mapping'
       case 'done':
         return 'Completed'
       case 'timeout':
         return 'Timed out'
       default:
-        return 'Starting...'
+        return 'Starting'
     }
   })()
 

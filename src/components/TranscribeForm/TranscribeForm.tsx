@@ -5,7 +5,7 @@ import { Input, Button, message, Form } from 'antd'
 import { LinkOutlined, FileTextOutlined, MailOutlined } from '@ant-design/icons'
 import * as Yup from 'yup'
 import axios from 'axios'
-import DownloadButtons from '../DownloadButtons/DownloadButtons'
+import DocumentButtons from '../DocumentButtons/DocumentButtons'
 import ProcessingView from './ProcessingView'
 import TranscriptViewer from '../TranscriptViewer/TranscriptViewer'
 import MapViewer from '../MapViewer/MapViewer'
@@ -27,12 +27,20 @@ interface FormValues {
 const validationSchema = Yup.object({
   driveVideoUrl: Yup.string()
     .url('Please enter a valid URL')
+    .test(
+      'not-folder',
+      'Folder links are not supported. Please provide a Google Drive file link.',
+      (value) => {
+        if (!value) return true
+        return !/drive\.google\.com\/(?:drive\/folders|folderview)/i.test(value)
+      }
+    )
     .required('Drive video URL is required'),
   episodeName: Yup.string()
     .required('Episode name is required')
     .matches(
-      /^[a-zA-Z0-9\s\-_]+$/,
-      'Episode name can only contain letters, numbers, spaces, hyphens, and underscores'
+      /^[\p{L}\p{M}0-9\s\-_]+$/u,
+      'Episode name can include letters (any language), numbers, spaces, hyphens, and underscores'
     ),
   email: Yup.string()
     .email('Please enter a valid email')
@@ -326,7 +334,7 @@ function TranscribeForm() {
             </Formik>
           </>
         ) : isDone ? (
-          <DownloadButtons
+          <DocumentButtons
             humanReadableTranscriptDriveFileUrl={statusRow?.resultTranscriptUrl || ''}
             mappingDriveFileUrl={statusRow?.resultMappingUrl || ''}
             onReset={handleReset}

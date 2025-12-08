@@ -1,19 +1,19 @@
 import { Button } from 'antd'
-import { DownloadOutlined, RedoOutlined, CheckCircleFilled } from '@ant-design/icons'
-import styles from './DownloadButtons.module.scss'
+import { LinkOutlined, RedoOutlined, CheckCircleFilled } from '@ant-design/icons'
+import styles from './DocumentButtons.module.scss'
 
-interface DownloadButtonsProps {
+interface DocumentButtonsProps {
   humanReadableTranscriptDriveFileUrl: string
   mappingDriveFileUrl: string
   onReset: () => void
 }
 
-function DownloadButtons({
+function DocumentButtons({
   humanReadableTranscriptDriveFileUrl,
   mappingDriveFileUrl,
   onReset
-}: DownloadButtonsProps) {
-  const handleDownload = (url: string) => {
+}: DocumentButtonsProps) {
+  const handleOpen = (url: string) => {
     window.open(url, '_blank')
   }
 
@@ -23,7 +23,7 @@ function DownloadButtons({
         <CheckCircleFilled className={styles.successIcon} />
         <h2 className={styles.successTitle}>Transcription Complete!</h2>
         <p className={styles.successSubtext}>
-          Your files are ready for download.
+          Your documents are ready to open.
         </p>
       </div>
 
@@ -31,20 +31,20 @@ function DownloadButtons({
         type="primary"
         size="large"
         block
-        icon={<DownloadOutlined />}
-        onClick={() => handleDownload(humanReadableTranscriptDriveFileUrl)}
+        icon={<LinkOutlined />}
+        onClick={() => handleOpen(humanReadableTranscriptDriveFileUrl)}
       >
-        Download Transcript
+        Open Transcript
       </Button>
       
       <Button
         type="primary"
         size="large"
         block
-        icon={<DownloadOutlined />}
-        onClick={() => handleDownload(mappingDriveFileUrl)}
+        icon={<LinkOutlined />}
+        onClick={() => handleOpen(mappingDriveFileUrl)}
       >
-        Download Mapping
+        Open Mapping
       </Button>
 
       <div className={styles.divider} />
@@ -61,4 +61,4 @@ function DownloadButtons({
   )
 }
 
-export default DownloadButtons
+export default DocumentButtons
