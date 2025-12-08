@@ -21,6 +21,12 @@
   gap: 6px;
 }
 
+.eyebrowRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .eyebrow {
   font-size: 0.85rem;
   font-weight: 700;
@@ -29,26 +35,9 @@
   color: var(--brand-orange);
 }
 
-.titleRow {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-
-  h3 {
-    margin: 0;
-    font-size: 1.35rem;
-  }
-}
-
 .titleIcon {
   color: var(--brand-orange);
   font-size: 1.2rem;
-}
-
-.subtext {
-  margin: 0;
-  color: var(--brand-text-muted);
-  font-size: 0.95rem;
 }
 
 .shell {
@@ -74,11 +63,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.metaNote {
-  color: var(--brand-text-muted);
-  font-size: 0.9rem;
+  flex-wrap: wrap;
 }
 
 .markdownBody {
@@ -90,8 +75,15 @@
   }
 
   ul, ol {
-    margin: 0 0 12px 1.2rem;
+    margin: 0 0 12px;
     padding: 0;
+    padding-inline-start: 1.8rem;
+    list-style-position: outside;
+  }
+
+  li {
+    margin: 0 0 8px;
+    padding-inline-start: 0.2rem;
   }
 
   h1, h2, h3, h4, h5, h6 {

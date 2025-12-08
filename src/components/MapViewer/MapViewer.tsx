@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Button, Tag, Tooltip, message } from 'antd'
+import { Button, Segmented, Tag, Tooltip, message } from 'antd'
 import { CopyOutlined, FileDoneOutlined } from '@ant-design/icons'
 import styles from './MapViewer.module.scss'
 
@@ -14,10 +14,11 @@ const RTL_CHARS_REGEX = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/
 const detectIsRtl = (text: string) => RTL_CHARS_REGEX.test(text)
 
 function MapViewer({ content }: MapViewerProps) {
-  const [isRtl, setIsRtl] = useState(false)
+  const [detectedRtl, setDetectedRtl] = useState(false)
+  const [directionMode, setDirectionMode] = useState<'auto' | 'ltr' | 'rtl'>('auto')
 
   useEffect(() => {
-    setIsRtl(detectIsRtl(content))
+    setDetectedRtl(detectIsRtl(content))
   }, [content])
 
   const handleCopy = async () => {
@@ -29,7 +30,11 @@ function MapViewer({ content }: MapViewerProps) {
     }
   }
 
-  const directionLabel = isRtl ? 'RTL detected' : 'LTR detected'
+  const resolvedDirection = directionMode === 'auto' ? (detectedRtl ? 'rtl' : 'ltr') : directionMode
+  const directionLabel =
+    directionMode === 'auto'
+      ? `Auto (${detectedRtl ? 'RTL' : 'LTR'})`
+      : `Set to ${directionMode.toUpperCase()}`
 
   const rendered = useMemo(
     () => (
@@ -57,14 +62,10 @@ function MapViewer({ content }: MapViewerProps) {
     <section className={styles.card}>
       <div className={styles.header}>
         <div className={styles.titleGroup}>
-          <div className={styles.eyebrow}>Mapping preview</div>
-          <div className={styles.titleRow}>
+          <div className={styles.eyebrowRow}>
             <FileDoneOutlined className={styles.titleIcon} />
-            <h3>Gemini output (Markdown)</h3>
+            <div className={styles.eyebrow}>Mapping preview</div>
           </div>
-          <p className={styles.subtext}>
-            Rendered directly from the llmResponse field—no download needed.
-          </p>
         </div>
         <Tooltip title="Copy full mapping to clipboard">
           <Button
@@ -77,10 +78,19 @@ function MapViewer({ content }: MapViewerProps) {
         </Tooltip>
       </div>
 
-      <div className={styles.shell} dir={isRtl ? 'rtl' : 'ltr'}>
+      <div className={styles.shell} dir={resolvedDirection}>
         <div className={styles.metaRow}>
-          <Tag color={isRtl ? 'volcano' : 'blue'}>{directionLabel}</Tag>
-          <span className={styles.metaNote}>Auto-detected from text.</span>
+          <Tag color={resolvedDirection === 'rtl' ? 'volcano' : 'blue'}>{directionLabel}</Tag>
+          <Segmented
+            size="small"
+            value={directionMode}
+            onChange={(value) => setDirectionMode(value as 'auto' | 'ltr' | 'rtl')}
+            options={[
+              { label: 'Auto', value: 'auto' },
+              { label: 'LTR', value: 'ltr' },
+              { label: 'RTL', value: 'rtl' }
+            ]}
+          />
         </div>
         <div className={styles.markdownBody}>{rendered}</div>
       </div>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Alert, Button, Spin, Tag, message } from 'antd'
+import { Alert, Button, Segmented, Spin, Tag, message } from 'antd'
 import { CopyOutlined, ReloadOutlined, FileTextOutlined } from '@ant-design/icons'
 import { extractRawText } from 'mammoth/mammoth.browser'
 import styles from './TranscriptViewer.module.scss'
@@ -14,11 +14,19 @@ const RTL_CHARS_REGEX = /[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]/
 
 const detectIsRtl = (text: string) => RTL_CHARS_REGEX.test(text)
 
+const toDocxExportUrl = (url: string) => {
+  if (!url) return ''
+  const match = url.match(/https?:\/\/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/)
+  if (!match) return url
+  return `https://docs.google.com/document/d/${match[1]}/export?format=docx`
+}
+
 function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
   const [transcriptText, setTranscriptText] = useState('')
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [isRtl, setIsRtl] = useState(false)
+  const [detectedRtl, setDetectedRtl] = useState(false)
+  const [directionMode, setDirectionMode] = useState<'auto' | 'ltr' | 'rtl'>('auto')
   const abortControllerRef = useRef<AbortController | null>(null)
 
   const fetchTranscript = useCallback(async () => {
@@ -32,7 +40,8 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
     setErrorMessage(null)
 
     try {
-      const response = await fetch(transcriptUrl, { signal: controller.signal })
+      const fetchUrl = toDocxExportUrl(transcriptUrl)
+      const response = await fetch(fetchUrl, { signal: controller.signal })
       if (!response.ok) {
         throw new Error(`Failed to download transcript (${response.status})`)
       }
@@ -47,7 +56,7 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
         .trim()
 
       setTranscriptText(cleaned)
-      setIsRtl(detectIsRtl(cleaned))
+      setDetectedRtl(detectIsRtl(cleaned))
       setLoadState('ready')
     } catch (error: any) {
       if (controller.signal.aborted) return
@@ -72,20 +81,21 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
   }
 
   const showCopyButton = loadState === 'ready' && Boolean(transcriptText)
-  const directionLabel = isRtl ? 'RTL detected' : 'LTR detected'
+  const resolvedDirection =
+    directionMode === 'auto' ? (detectedRtl ? 'rtl' : 'ltr') : directionMode
+  const directionLabel =
+    directionMode === 'auto'
+      ? `Auto (${detectedRtl ? 'RTL' : 'LTR'})`
+      : `Set to ${directionMode.toUpperCase()}`
 
   return (
     <section className={styles.viewerCard} aria-live="polite">
       <div className={styles.viewerHeader}>
         <div className={styles.titleGroup}>
-          <div className={styles.eyebrow}>Transcript preview</div>
-          <div className={styles.titleRow}>
+          <div className={styles.eyebrowRow}>
             <FileTextOutlined className={styles.titleIcon} />
-            <h3>Read it without downloading</h3>
+            <div className={styles.eyebrow}>Transcript preview</div>
           </div>
-          <p className={styles.subtext}>
-            We fetch the .docx for you, turn it into text, and render it here with RTL awareness.
-          </p>
         </div>
         <div className={styles.actions}>
           <Button
@@ -133,10 +143,19 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
         )}
 
         {loadState === 'ready' && (
-          <div className={styles.transcriptShell} dir={isRtl ? 'rtl' : 'ltr'}>
+          <div className={styles.transcriptShell} dir={resolvedDirection}>
             <div className={styles.metaRow}>
-              <Tag color={isRtl ? 'volcano' : 'blue'}>{directionLabel}</Tag>
-              <span className={styles.metaNote}>Auto-detected from transcript text.</span>
+              <Tag color={resolvedDirection === 'rtl' ? 'volcano' : 'blue'}>{directionLabel}</Tag>
+              <Segmented
+                size="small"
+                value={directionMode}
+                onChange={(value) => setDirectionMode(value as 'auto' | 'ltr' | 'rtl')}
+                options={[
+                  { label: 'Auto', value: 'auto' },
+                  { label: 'LTR', value: 'ltr' },
+                  { label: 'RTL', value: 'rtl' }
+                ]}
+              />
             </div>
             {transcriptText ? (
               <div className={styles.transcriptText}>{transcriptText}</div>
