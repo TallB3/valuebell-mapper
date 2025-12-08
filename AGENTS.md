@@ -1,6 +1,6 @@
 # AGENTS.md
 
-This file provides guidance to Codex when working with code in this repository.
+This file provides guidance to LLMs when working with code in this repository.
 
 ## Project Overview
 
@@ -141,13 +141,13 @@ Simple 3-node workflow:
 App.tsx
 └── TranscribeForm.tsx (main form + job orchestration)
     ├── DownloadButtons.tsx (success state with download links)
-    ├── TranscriptViewer.tsx (inline .docx preview with copy + RTL detection)
-    └── MapViewer.tsx (inline mapping markdown preview from llmResponse)
+    └── PreviewSwitcher.tsx (single container that toggles between TranscriptViewer + MapViewer; shows a toast + inline badge when mapping becomes available)
 ```
 
 - **App.tsx**: Ant Design dark theme configuration with Valuebell branding (`#F96B2F` primary color)
 - **TranscribeForm.tsx**: All job submission, polling logic, and conditional rendering
 - **DownloadButtons.tsx**: Download links + "Submit Another" reset button
+- **PreviewSwitcher.tsx**: Switches between transcript (.docx fetch + RTL-aware) and mapping markdown previews inside one component; mapping availability triggers a toast and inline badge, but does not auto-switch the view
 
 ### Form Validation
 

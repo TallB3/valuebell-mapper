@@ -58,9 +58,13 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
       setTranscriptText(cleaned)
       setDetectedRtl(detectIsRtl(cleaned))
       setLoadState('ready')
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (controller.signal.aborted) return
-      setErrorMessage(error?.message || 'Unable to load transcript')
+      if (error instanceof Error) {
+        setErrorMessage(error.message)
+      } else {
+        setErrorMessage('Unable to load transcript')
+      }
       setLoadState('error')
     }
   }, [transcriptUrl])
@@ -75,7 +79,7 @@ function TranscriptViewer({ transcriptUrl }: TranscriptViewerProps) {
     try {
       await navigator.clipboard.writeText(transcriptText)
       message.success('Transcript copied to clipboard')
-    } catch (error) {
+    } catch {
       message.error('Failed to copy transcript')
     }
   }

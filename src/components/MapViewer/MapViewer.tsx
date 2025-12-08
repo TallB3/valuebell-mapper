@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type HTMLAttributes, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Button, Segmented, Tag, Tooltip, message } from 'antd'
@@ -42,7 +42,16 @@ function MapViewer({ content }: MapViewerProps) {
         remarkPlugins={[remarkGfm]}
         components={{
           a: (props) => <a {...props} target="_blank" rel="noreferrer" />,
-          code: ({ inline, className, children, ...rest }: any) =>
+          code: ({
+            inline,
+            className,
+            children,
+            ...rest
+          }: {
+            inline?: boolean
+            className?: string
+            children?: ReactNode
+          } & HTMLAttributes<HTMLElement>) =>
             inline ? (
               <code className={styles.inlineCode} {...rest}>{children}</code>
             ) : (

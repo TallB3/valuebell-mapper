@@ -7,8 +7,7 @@ import * as Yup from 'yup'
 import axios from 'axios'
 import DocumentButtons from '../DocumentButtons/DocumentButtons'
 import ProcessingView from './ProcessingView'
-import TranscriptViewer from '../TranscriptViewer/TranscriptViewer'
-import MapViewer from '../MapViewer/MapViewer'
+import PreviewSwitcher from '../PreviewSwitcher/PreviewSwitcher'
 import styles from './TranscribeForm.module.scss'
 import { TRANSCRIBE_WEBHOOK, TRANSCRIBE_STATUS_WEBHOOK } from '../../constants'
 const POLL_INTERVAL_MS = 10_000
@@ -149,10 +148,16 @@ function TranscribeForm() {
         } else if (!opts?.initial && !isPolling) {
           setIsPolling(true)
         }
-      } catch (error: any) {
-        // Avoid spamming the user; surface a soft warning.
+      } catch (error: unknown) {
         if (!opts?.initial) {
-          message.warning(error.response?.data?.message || 'Status check failed, retrying...')
+          if (axios.isAxiosError(error)) {
+            const apiMessage = error.response?.data as { message?: string } | undefined
+            message.warning(apiMessage?.message || 'Status check failed, retrying...')
+          } else if (error instanceof Error) {
+            message.warning(error.message)
+          } else {
+            message.warning('Status check failed, retrying...')
+          }
         }
       }
     },
@@ -208,8 +213,15 @@ function TranscribeForm() {
       setJobId(idAsString)
       startPolling(idAsString)
       message.success('Request submitted. We are processing your file.')
-    } catch (error: any) {
-      message.error(error.response?.data?.message || error.message || 'Request failed')
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const apiMessage = error.response?.data as { message?: string } | undefined
+        message.error(apiMessage?.message || error.message || 'Request failed')
+      } else if (error instanceof Error) {
+        message.error(error.message)
+      } else {
+        message.error('Request failed')
+      }
     } finally {
       setLoading(false)
       setSubmitting(false)
@@ -232,8 +244,7 @@ function TranscribeForm() {
   const hasJob = Boolean(jobId)
   const transcriptUrl = statusRow?.resultTranscriptUrl || ''
   const mappingMarkdown = (statusRow?.llmResponse || '').trim()
-  const showTranscriptViewer = Boolean(transcriptUrl)
-  const showMappingViewer = Boolean(mappingMarkdown)
+  const hasPreview = Boolean(transcriptUrl || mappingMarkdown)
 
   return (
     <div className={styles.wrapper}>
@@ -351,10 +362,9 @@ function TranscribeForm() {
         )}
       </div>
 
-      {(showTranscriptViewer || showMappingViewer) && (
+      {hasPreview && (
         <div className={styles.viewerContainer}>
-          {showTranscriptViewer && <TranscriptViewer transcriptUrl={transcriptUrl} />}
-          {showMappingViewer && <MapViewer content={mappingMarkdown} />}
+          <PreviewSwitcher transcriptUrl={transcriptUrl} mappingContent={mappingMarkdown} />
         </div>
       )}
     </div>
