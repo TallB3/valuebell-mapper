@@ -53,6 +53,7 @@ interface StatusRow {
   resultMappingUrl?: string | null
   llmResponse?: string | null
   error?: boolean
+  errorMessage?: string | null
 }
 
 function TranscribeForm() {
@@ -138,7 +139,7 @@ function TranscribeForm() {
 
         if (row.error) {
           stopPolling()
-          setErrorMessage('Processing failed. Please try again.')
+          setErrorMessage(row.errorMessage || 'Processing failed. Please try again.')
           return
         }
 
@@ -263,7 +264,7 @@ function TranscribeForm() {
               {({ setFieldValue, values, errors, touched, handleBlur }) => (
                 <FormikForm>
                   <Form.Item
-                    label={<span className={styles.label}>Drive Video URL</span>}
+                    label={<span className={styles.label}>Google Drive URL</span>}
                     validateStatus={touched.driveVideoUrl && errors.driveVideoUrl ? 'error' : ''}
                     help={touched.driveVideoUrl && errors.driveVideoUrl}
                     colon={false}

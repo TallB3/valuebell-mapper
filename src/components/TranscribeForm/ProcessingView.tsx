@@ -64,10 +64,14 @@ function ProcessingView({
     <div>
       <div className={styles.formHeader}>
         <h2>Processing Request</h2>
-        <div className={styles.spiralSpinner} />
+        {!errorMessage && !isErrored && (
+          <div className={styles.spiralSpinner} />
+        )}
         <p>
           {statusLabel}
-          <span className={styles.ellipsis}></span>
+          {!errorMessage && !isErrored && (
+            <span className={styles.ellipsis}></span>
+          )}
         </p>
       </div>
 
