@@ -19,7 +19,7 @@ function App() {
         },
       }}
     >
-      <div className="app-container">
+      <div className={`app-container ${isEmbedMode ? 'embed-mode' : ''}`}>
         <header className="app-header">
           <a href="https://www.valuebell.studio/" target="_blank" rel="noopener noreferrer">
             <img src={valubellIcon} className="app-logo" alt="Valuebell Logo" />
