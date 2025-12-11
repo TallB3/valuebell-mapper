@@ -75,13 +75,15 @@ interface StatusRow {
   resultTranscriptUrl?: string | null  // Google Doc link (frontend derives .docx export for inline preview)
   resultMappingUrl?: string | null     // Google Doc link
   llmResponse?: string | null          // raw Gemini mapping markdown (rendered inline)
-  error?: boolean
+  error?: boolean                      // true if processing failed
+  errorMessage?: string | null         // user-friendly error message from backend
 }
 ```
 
 **4. UI States**:
 - **Form state**: Show input form when no active job
 - **Processing state**: `ProcessingView` shows spinner, optional celebratory GIF, elapsed timer, step tracker, and ready links if URLs arrive early
+- **Error state**: Spinner and animated dots are hidden; displays `errorMessage` from backend (or generic fallback); shows "Submit Another" button
 - **Done state**: Show `DocumentButtons` component with both links to open the Google Docs and a reset action
 
 ### Backend Architecture (n8n Workflows)
@@ -124,9 +126,11 @@ interface StatusRow {
    - Updates database with `resultMappingUrl` (docx export link)
    - Sets final status to `done`
 
-8. **Error Handling** (nodes: "error: true", "error: true1")
+8. **Error Handling** (nodes: "error: true", "error: true1", "error: true2")
+   - On Drive file copy failure: sets `error: true` + `errorMessage` with permission hint
    - On transcription failure: sets `error: true`
    - On mapping failure: sets `error: true`
+   - Frontend displays `errorMessage` if present, otherwise shows generic "Processing failed" message
 
 **Status Workflow: "mapper-runs-get-status.json"**
 
@@ -181,6 +185,7 @@ Columns:
 - `resultTranscriptUrl` (string) - Google Docs export URL for transcript
 - `resultMappingUrl` (string) - Google Docs export URL for content mapping
 - `error` (boolean) - `true` if processing failed
+- `errorMessage` (string) - User-friendly error message (e.g., Drive permission hint)
 
 ## Key TypeScript Configurations
 
@@ -221,6 +226,9 @@ useEffect(() => {
 - Use Ant Design's `message.error()` for user-facing errors
 - Use `message.warning()` for soft warnings during polling failures
 - Display inline error messages for timeout/processing failures
+- Backend can return `errorMessage` for specific errors (e.g., Drive permission issues)
+- Frontend hides spinner/animated dots when `error: true` or timeout occurs
+- Always provide fallback message: `row.errorMessage || 'Processing failed. Please try again.'`
 
 ### n8n Workflow Development
 - Edit workflow JSON files directly or use n8n UI and export
