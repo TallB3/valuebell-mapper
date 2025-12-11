@@ -5,6 +5,9 @@ import valubellIcon from './assets/valubell-icon.jpeg'
 import './App.css'
 
 function App() {
+  // Detect embed mode from URL parameter
+  const isEmbedMode = new URLSearchParams(window.location.search).get('embed') === 'true'
+
   return (
     <ConfigProvider
       theme={{
@@ -26,18 +29,20 @@ function App() {
         <main className="app-main">
           <TranscribeForm />
         </main>
-        <Button
-          type="primary"
-          shape="round"
-          icon={<MailOutlined />}
-          href="https://www.valuebell.studio/contact"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="floating-contact-button"
-          size="large"
-        >
-          Contact Us
-        </Button>
+        {!isEmbedMode && (
+          <Button
+            type="primary"
+            shape="round"
+            icon={<MailOutlined />}
+            href="https://www.valuebell.studio/contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="floating-contact-button"
+            size="large"
+          >
+            Contact Us
+          </Button>
+        )}
       </div>
     </ConfigProvider>
   )
